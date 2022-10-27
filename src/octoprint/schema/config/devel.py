@@ -4,7 +4,8 @@ __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms
 from enum import Enum
 
 from pydantic import BaseModel
-from pydantic_settings import with_attrs_docs
+
+from octoprint.vendor.with_attrs_docs import with_attrs_docs
 
 
 class StylesheetEnum(str, Enum):
@@ -29,7 +30,7 @@ class DevelWebassetsConfig(BaseModel):
 
 class DevelCacheConfig(BaseModel):
     enabled: bool = True
-    """Whether to enable caching. Defaults to true. Setting it to false will cause the UI to alway be fully rerendered on request to `/` on the server."""
+    """Whether to enable caching. Defaults to true. Setting it to false will cause the UI to always be fully rerendered on request to `/` on the server."""
 
     preemptive: bool = True
     """Whether to enable the preemptive cache."""
@@ -53,3 +54,9 @@ class DevelConfig(BaseModel):
 
     sockJsConnectTimeout: float = 30
     pluginTimings: bool = False
+
+    enableRateLimiter: bool = True
+    """Enable or disable the rate limiter. Careful, disabling this reduces security."""
+
+    enableCsrfProtection: bool = True
+    """Enable or disable the CSRF protection. Careful, disabling this reduces security."""

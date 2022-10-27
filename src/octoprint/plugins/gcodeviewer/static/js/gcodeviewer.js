@@ -8,6 +8,7 @@ $(function () {
 
         self.sizeThresholdStr = undefined;
         self.mobileSizeThresholdStr = undefined;
+        self.compressionSizeThresholdStr = undefined;
 
         self.ui_progress_busy = ko.observable(false);
         self.ui_progress_percentage = ko.observable();
@@ -15,14 +16,6 @@ $(function () {
         self.ui_progress_text = ko.pureComputed(function () {
             var text = "";
             switch (self.ui_progress_type()) {
-                case "downloading": {
-                    text = gettext("Downloading...");
-                    break;
-                }
-                case "splitting": {
-                    text = gettext("Splitting lines...");
-                    break;
-                }
                 case "parsing": {
                     text =
                         gettext("Parsing...") +
@@ -83,6 +76,7 @@ $(function () {
 
         self.reader_hideEmptyLayers = ko.observable(true);
         self.reader_ignoreOutsideBed = ko.observable(true);
+        self.reader_forceCompression = ko.observable(false);
 
         self.layerSelectionEnabled = ko.observable(false);
         self.layerUpEnabled = ko.observable(false);
@@ -127,7 +121,12 @@ $(function () {
 
             var reader = {
                 purgeEmptyLayers: self.reader_hideEmptyLayers(),
-                ignoreOutsideBed: self.reader_ignoreOutsideBed()
+                ignoreOutsideBed: self.reader_ignoreOutsideBed(),
+                alwaysCompress:
+                    self.settings.settings.plugins.gcodeviewer.alwaysCompress(),
+                compressionSizeThreshold:
+                    self.settings.settings.plugins.gcodeviewer.compressionSizeThreshold(),
+                forceCompression: self.reader_forceCompression()
             };
             if (additionalReaderOptions) {
                 _.extend(reader, additionalReaderOptions);
@@ -170,6 +169,7 @@ $(function () {
 
         self.reader_hideEmptyLayers.subscribe(self.readerOptionUpdated);
         self.reader_ignoreOutsideBed.subscribe(self.readerOptionUpdated);
+        self.reader_forceCompression.subscribe(self.readerOptionUpdated);
 
         self._printerProfileUpdated = function () {
             if (!self.enabled) return;
@@ -360,6 +360,9 @@ $(function () {
             self.mobileSizeThresholdStr = sizeObservable(
                 self.settings.settings.plugins.gcodeviewer.mobileSizeThreshold
             );
+            self.compressionSizeThresholdStr = sizeObservable(
+                self.settings.settings.plugins.gcodeviewer.compressionSizeThreshold
+            );
 
             var layerSliderElement = $("#gcode_slider_layers");
             var commandSliderElement = $("#gcode_slider_commands");
@@ -385,6 +388,7 @@ $(function () {
                     onProgress: self._onProgress,
                     onModelLoaded: self._onModelLoaded,
                     onLayerSelected: self._onLayerSelected,
+                    onFileLoaded: self._onFileLoaded,
                     bed: self._retrieveBedDimensions(),
                     toolOffsets: self._retrieveToolOffsets(),
                     invertAxes: self._retrieveAxesConfiguration(),
@@ -395,6 +399,13 @@ $(function () {
                     log.info("Could not initialize GCODE viewer component");
                     return;
                 }
+
+                self.settings.settings.plugins.gcodeviewer.alwaysCompress.subscribe(
+                    self.readerOptionUpdated
+                );
+                self.settings.settings.plugins.gcodeviewer.compressionSizeThreshold.subscribe(
+                    self.readerOptionUpdated
+                );
 
                 self.synchronizeOptions();
                 self.enabled = true;
@@ -435,6 +446,7 @@ $(function () {
 
             self.reader_hideEmptyLayers(true);
             self.reader_ignoreOutsideBed(true);
+            self.reader_forceCompression(false);
         };
 
         self.clear = function () {
@@ -498,51 +510,33 @@ $(function () {
             self.needsLoad = false;
             if (self.status === "idle" && self.errorCount < 3) {
                 self.status = "request";
-                self._onProgress("downloading");
-                OctoPrint.files
-                    .download("local", path)
-                    .done(function (response, rstatus) {
-                        if (rstatus === "success") {
-                            self.showGCodeViewer(response, rstatus);
-                            self.loadedFilepath = path;
-                            self.loadedFileDate = date;
-                            self.status = "idle";
-                            self.enableReload(true);
-                        }
-                    })
-                    .fail(function () {
-                        self.status = "idle";
-                        self.errorCount++;
-                    });
+
+                self.cachedPath = path;
+                self.cachedDate = date;
+                var par = {
+                    url: OctoPrint.files.downloadPath("local", path),
+                    path: path,
+                    skipUntil: self.settings.settings.plugins.gcodeviewer.skipUntilThis()
+                };
+
+                GCODE.renderer.clear();
+                self._onProgress("parsing");
+                GCODE.gCodeReader.loadFile(par);
+
+                if (self.layerSlider !== undefined) {
+                    self.layerSlider.slider("disable");
+                }
+                if (self.layerCommandSlider !== undefined) {
+                    self.layerCommandSlider.slider("disable");
+                }
             }
         };
 
-        self.showGCodeViewer = function (response, rstatus) {
-            // Slice of the gcode
-            var findThis = self.settings.settings.plugins.gcodeviewer.skipUntilThis();
-            if (findThis && findThis !== "") {
-                var indexPos = response.indexOf("\n" + findThis);
-                if (indexPos !== -1) {
-                    // Slice and make sure we comment out any string left back after slicing - so if a user configures something like "G1" we dont end up with a snippet of gcode commands
-                    // Yes it would be prettier to parse it line by line and remove the entire line, that is very slow and uses mem - this way we find the string, and remove it
-                    response = ";" + response.slice(indexPos + findThis.length + 1);
-                }
-            }
-            var par = {
-                target: {
-                    result: response
-                }
-            };
-            GCODE.renderer.clear();
-            self._onProgress("splitting");
-            GCODE.gCodeReader.loadFile(par);
-
-            if (self.layerSlider !== undefined) {
-                self.layerSlider.slider("disable");
-            }
-            if (self.layerCommandSlider !== undefined) {
-                self.layerCommandSlider.slider("disable");
-            }
+        self._onFileLoaded = function () {
+            self.loadedFilepath = self.cachedPath;
+            self.loadedFileDate = self.cachedDate;
+            self.status = "idle";
+            self.enableReload(true);
         };
 
         self.reload = function () {
@@ -931,6 +925,7 @@ $(function () {
                 showBoundingBox: self.renderer_showBoundingBox(),
                 showLayerBoundingBox: self.renderer_showLayerBoundingBox(),
                 hideEmptyLayers: self.reader_hideEmptyLayers()
+                // reader_forceCompression is never saved.
             });
         };
         self._fromLocalStorage = function () {

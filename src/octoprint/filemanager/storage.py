@@ -164,7 +164,7 @@ class StorageInterface:
 
         :param string path:          the path of the new folder
         :param bool ignore_existing: if set to True, no error will be raised if the folder to be added already exists
-        :param unicode display:      display name of the folder
+        :param str display:          display name of the folder
         :return: the sanitized name of the new folder to be used for future references to the folder
         """
         raise NotImplementedError()
@@ -220,7 +220,7 @@ class StorageInterface:
         :param list links:             any links to add with the file
         :param bool allow_overwrite:   if set to True no error will be raised if the file already exists and the existing file
                                        and its metadata will just be silently overwritten
-        :param unicode display:        display name of the file
+        :param str display:            display name of the file
         :return: the sanitized name of the file to be used for future references to it
         """
         raise NotImplementedError()
@@ -445,8 +445,7 @@ class StorageError(Exception):
     NOT_EMPTY = "not_empty"
 
     def __init__(self, message, code=None, cause=None):
-        BaseException.__init__(self)
-        self.message = message
+        Exception.__init__(self, message)
         self.cause = cause
 
         if code is None:
@@ -740,7 +739,7 @@ class LocalFileStorage(StorageInterface):
         ):
             raise StorageError(
                 f"{destination_name} does already exist in {destination_path}",
-                code=StorageError.INVALID_DESTINATION,
+                code=StorageError.ALREADY_EXISTS,
             )
 
         source_meta = self._get_metadata_entry(source_path, source_name)
@@ -954,6 +953,12 @@ class LocalFileStorage(StorageInterface):
             source, destination, must_not_equal=True
         )
 
+        if not octoprint.filemanager.valid_file_type(destination_data["name"]):
+            raise StorageError(
+                f"{destination_data['name']} is an unrecognized file type",
+                code=StorageError.INVALID_FILE,
+            )
+
         try:
             shutil.copy2(source_data["fullpath"], destination_data["fullpath"])
         except Exception as e:
@@ -982,6 +987,12 @@ class LocalFileStorage(StorageInterface):
         source_data, destination_data = self._get_source_destination_data(
             source, destination
         )
+
+        if not octoprint.filemanager.valid_file_type(destination_data["name"]):
+            raise StorageError(
+                f"{destination_data['name']} is an unrecognized file type",
+                code=StorageError.INVALID_FILE,
+            )
 
         # only a display rename? Update that and bail early
         if source_data["fullpath"] == destination_data["fullpath"]:

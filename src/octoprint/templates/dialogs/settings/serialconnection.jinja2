@@ -303,13 +303,6 @@
                     <div class="control-group">
                         <div class="controls">
                             <label class="checkbox">
-                                <input type="checkbox" data-bind="checked: serial_sdAlwaysAvailable" id="settings-serialSdAlwaysAvailable"> {{ _('Always assume SD card is present') }} <span class="label">{{ _('Repetier') }}</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox">
                                 <input type="checkbox" data-bind="checked: serial_disableSdPrintingDetection" id="settings-disableSdPrintingDetection"> {{ _('Disable SD printing detection') }} <span class="label">{{ _('Ultimaker 2/2+') }}</span>
                             </label>
                         </div>
@@ -372,7 +365,7 @@
                             </label>
                         </div>
                     </div>
-            </div>
+                </div>
                 <div>
                     <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', container: '#settings_serial_protocol_firmware .hide' }"><i class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
                     <div class="hide">
@@ -427,6 +420,13 @@
                             </div>
                         </div>
                         <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox">
+                                    <input type="checkbox" data-bind="checked: serial_sdAlwaysAvailable" id="settings-serialSdAlwaysAvailable"> {{ _('Always assume SD card is present') }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="control-group">
                             <label class="control-label"> {{ _('Simulate <code>ok</code> for resend requests') }}</label>
                             <div class="controls">
                                 <label class="radio">
@@ -451,6 +451,12 @@
                         <label class="checkbox">
                             <input type="checkbox" data-bind="checked: serial_waitForStart" id="settings-serialWaitForStart"> {{ _('Wait for <code>start</code> on connect') }}
                             <span class="help-block">{{ _('Try checking this if you run into connection timeouts due to your printer taking too long to respond to OctoPrint\'s handshake attempts on connect.') }}</span>
+                        </label>
+                    </div>
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: serial_waitToLoadSdFileList" id="settings-serialWaitToLoadSdFileList"> {{ _('Wait to load the SD card file list until the firmware capability report is processed.') }}
+                            <span class="help-block">{{ _('Try checking this if the SD card file list loads improperly after connecting to the printer.') }}</span>
                         </label>
                     </div>
                 </div>
