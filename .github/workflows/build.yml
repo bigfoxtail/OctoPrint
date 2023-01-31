@@ -166,7 +166,7 @@ jobs:
       - name: 🚀 Run Playwright
         working-directory: ./tests/playwright
         run: |
-          npx playwright test
+          DEBUG=pw:webserver npx playwright test login
 
       - name: ⬆ Upload report
         uses: actions/upload-artifact@v3
