@@ -30,6 +30,12 @@ const config = {
             use: {
                 ...devices["Desktop Chrome"]
             }
+        },
+        {
+            name: "firefox",
+            use: {
+                ...devices["Desktop Firefox"]
+            }
         }
 
         /* Test against mobile viewports. */
@@ -61,21 +67,6 @@ const config = {
         // },
     ]
 };
-
-if (!process.env.CI) {
-    config.projects.push({
-        name: "firefox",
-        use: {
-            ...devices["Desktop Firefox"]
-        }
-    });
-    config.projects.push({
-        name: "webkit",
-        use: {
-            ...devices["Desktop Safari"]
-        }
-    });
-}
 
 if (!process.env.NO_SERVER) {
     const octoprintServerOpts = process.env.OCTOPRINT_SERVER_BASE
