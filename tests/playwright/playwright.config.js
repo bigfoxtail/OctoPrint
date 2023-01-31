@@ -9,7 +9,7 @@ const config = {
     },
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
+    workers: process.env.CI ? 2 : undefined,
     reportSlowTests: {
         max: 30_000,
         threshold: 50_000
@@ -28,18 +28,6 @@ const config = {
             name: "chromium",
             use: {
                 ...devices["Desktop Chrome"]
-            }
-        },
-        {
-            name: "firefox",
-            use: {
-                ...devices["Desktop Firefox"]
-            }
-        },
-        {
-            name: "webkit",
-            use: {
-                ...devices["Desktop Safari"]
             }
         }
 
@@ -72,6 +60,21 @@ const config = {
         // },
     ]
 };
+
+if (!process.env.CI) {
+    config.projects.push({
+        name: "firefox",
+        use: {
+            ...devices["Desktop Firefox"]
+        }
+    });
+    config.projects.push({
+        name: "webkit",
+        use: {
+            ...devices["Desktop Safari"]
+        }
+    });
+}
 
 if (!process.env.NO_SERVER) {
     const octoprintServerOpts = process.env.OCTOPRINT_SERVER_BASE
