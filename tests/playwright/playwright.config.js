@@ -20,7 +20,8 @@ const config = {
         baseURL: process.env.PLAYWRIGHT_BASEURL || "http://localhost:5000",
         testIdAttribute: "data-test-id",
         trace: "on",
-        video: "on"
+        video: "on",
+        viewport: {width: 1280, height: 720}
     },
 
     projects: [
