@@ -166,7 +166,7 @@ jobs:
       - name: 🚀 Run Playwright
         working-directory: ./tests/playwright
         run: |
-          DEBUG=pw:webserver OCTOPRINT_SERVER_BASE=${{ github.workspace }}/e2econfig npx playwright test login:9
+          OCTOPRINT_SERVER_BASE=${{ github.workspace }}/e2econfig npx playwright test
 
       - name: ⬆ Upload report
         uses: actions/upload-artifact@v3
